@@ -6,23 +6,26 @@
  */
 package com.yinan.play.demo.meta;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
  * @author Yinan Zhang (zhangyinan01@corp.netease.com)
  */
 public class Item {
-    private Long itemId;
+    private long itemId;
 
     private String name;
 
     private List<Integer> skuList;
 
-    public Long getItemId() {
+    private BigDecimal price;
+
+    public long getItemId() {
         return itemId;
     }
 
-    public void setItemId(Long itemId) {
+    public void setItemId(long itemId) {
         this.itemId = itemId;
     }
 
@@ -40,5 +43,13 @@ public class Item {
 
     public void setSkuList(List<Integer> skuList) {
         this.skuList = skuList;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
     }
 }

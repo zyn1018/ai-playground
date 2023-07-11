@@ -44,4 +44,6 @@ public interface RetryService {
      * @param param
      */
     void guavaRetry(double param);
+
+    void testOutput();
 }

@@ -78,4 +78,9 @@ public class RetryServiceImpl implements RetryService {
             throw new RemoteAccessException("retry exception");
         }
     }
+
+    @Override
+    public void testOutput() {
+        System.out.println("retry first");
+    }
 }
