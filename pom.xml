@@ -136,6 +136,23 @@
             <systemPath>${basedir}/libs/mysql-connector-java-8.0.30.jar</systemPath>
         </dependency>
 
+        <dependency>
+            <groupId>com.netease.yanxuan.missa</groupId>
+            <artifactId>missa-client</artifactId>
+            <version>1.3.4-RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.59</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.10</version>
+        </dependency>
+
 
         <dependency>
             <groupId>com.baomidou</groupId>

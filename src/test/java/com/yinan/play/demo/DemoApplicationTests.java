@@ -1,26 +1,49 @@
 package com.yinan.play.demo;
 
-import com.alibaba.fastjson.JSON;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.rholder.retry.Retryer;
-import com.github.rholder.retry.RetryerBuilder;
-import com.github.rholder.retry.StopStrategies;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.yinan.enums.Platform;
-import com.yinan.play.demo.meta.*;
-import com.yinan.play.demo.meta.enums.CacheOpeTypeEnum;
-import com.yinan.play.demo.meta.enums.StatEventTypeEnum;
-import com.yinan.play.demo.meta.enums.TriggerStageEnum;
-import com.yinan.play.demo.service.RetryService;
-import com.yinan.play.demo.util.*;
-import com.yinan.util.DigestUtils;
-import com.yinan.util.SkuOperationAtrributeUtil;
-import lombok.extern.slf4j.Slf4j;
+import static com.yinan.enums.Platform.APP;
+
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,29 +56,52 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.CollectionUtils;
 
-import javax.naming.ServiceUnavailableException;
-import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.rmi.ServerException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.*;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAdjusters;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.yinan.enums.Platform;
+import com.yinan.play.demo.meta.AbtResourceTO;
+import com.yinan.play.demo.meta.AddBuyStepVO;
+import com.yinan.play.demo.meta.CacheScheduleStatEvent;
+import com.yinan.play.demo.meta.CategoryVO;
+import com.yinan.play.demo.meta.ComplexTextColorConsts;
+import com.yinan.play.demo.meta.ComplexTextVO;
+import com.yinan.play.demo.meta.FlashSaleScreenVO;
+import com.yinan.play.demo.meta.FullRefundPolicyBean;
+import com.yinan.play.demo.meta.GoodsBasic;
+import com.yinan.play.demo.meta.Item;
+import com.yinan.play.demo.meta.ItemDetailBaseVO;
+import com.yinan.play.demo.meta.ItemSkuParam;
+import com.yinan.play.demo.meta.LotteryGiftBean;
+import com.yinan.play.demo.meta.NewItemListResultVO;
+import com.yinan.play.demo.meta.OMSOrderExpressDetailInfoBean;
+import com.yinan.play.demo.meta.OMSOrderOutBean;
+import com.yinan.play.demo.meta.OMSOrderPackageBean;
+import com.yinan.play.demo.meta.ProcessContext;
+import com.yinan.play.demo.meta.enums.CacheOpeTypeEnum;
+import com.yinan.play.demo.meta.enums.StatEventTypeEnum;
+import com.yinan.play.demo.meta.enums.TriggerStageEnum;
+import com.yinan.play.demo.service.RetryService;
+import com.yinan.play.demo.util.BeanCopierUtils;
+import com.yinan.play.demo.util.CacheExtKeyUtil;
+import com.yinan.play.demo.util.DateUtils;
+import com.yinan.play.demo.util.MapPartitioner;
+import com.yinan.play.demo.util.ParseMD5;
+import com.yinan.play.demo.util.SchemeUrlBuilder;
+import com.yinan.play.demo.util.UrlUtils;
+import com.yinan.play.demo.util.UserInfoUtil;
+import com.yinan.play.demo.util.ZipUtils;
+import com.yinan.util.DigestUtils;
+import com.yinan.util.SkuOperationAtrributeUtil;
 
-import static com.yinan.enums.Platform.APP;
+import lombok.extern.slf4j.Slf4j;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -73,6 +119,9 @@ public class DemoApplicationTests {
 
     @Test
     public void contextLoads() {
+        System.out.println(NumberUtils.isCreatable("0.5"));
+        System.out.println(NumberUtils.isCreatable("600.5"));
+        System.out.println(NumberUtils.isCreatable("一"));
     }
 
     /**
@@ -80,10 +129,18 @@ public class DemoApplicationTests {
      */
     @Test
     public void testRetry() {
-        try {
-            retryService.retryByAnnotation(0.6);
-        } catch (RemoteAccessException | ServiceUnavailableException | ServerException e) {
-            e.printStackTrace();
+        // 示例数据
+        Map<String, List<String>> spuIdSkuInventoryMap = new HashMap<>();
+        for (int i = 1; i <= 53; i++) {
+            spuIdSkuInventoryMap.put("key" + i, Arrays.asList("value" + i));
+        }
+
+        // 分批
+        List<Map<String, List<String>>> partitions = MapPartitioner.partitionMap(spuIdSkuInventoryMap, 20);
+
+        // 打印结果
+        for (int i = 0; i < partitions.size(); i++) {
+            System.out.println("Partition " + (i + 1) + ": " + partitions.get(i));
         }
     }
 
@@ -102,7 +159,8 @@ public class DemoApplicationTests {
         RetryTemplate template = new RetryTemplate();
         template.setRetryPolicy(simpleRetryPolicy);
 
-        template.execute(retryContext -> retryService.retryByTemplate(0.6), retryContext -> retryService.recoverByTemplate());
+        template.execute(retryContext -> retryService.retryByTemplate(0.6),
+            retryContext -> retryService.recoverByTemplate());
     }
 
     /**
@@ -116,11 +174,9 @@ public class DemoApplicationTests {
             return true;
         };
 
-        Retryer<Boolean> retry = RetryerBuilder.<Boolean>newBuilder()
-                .retryIfResult(Predicates.isNull())
-                .retryIfExceptionOfType(RemoteAccessException.class)
-                .withStopStrategy(StopStrategies.stopAfterAttempt(3))
-                .build();
+        Retryer<Boolean> retry = RetryerBuilder.<Boolean>newBuilder().retryIfResult(Predicates.isNull())
+            .retryIfExceptionOfType(RemoteAccessException.class).withStopStrategy(StopStrategies.stopAfterAttempt(3))
+            .build();
 
         try {
             retry.call(callable);
@@ -147,18 +203,28 @@ public class DemoApplicationTests {
         System.out.println(s.contains("[op:getNoPassSkuProcessList] 获取sku可预约质检量失败, purchaseOrder=YC"));
     }
 
-
     @Test
     public void testThreadLocalRandom() {
-        int count = 0;
-        for (int i = 0; i < 10000; i++) {
-            int random = ThreadLocalRandom.current().nextInt(100);
-            if (random < Math.round(50)) {
-                count++;
+
+        List<Integer> list = Lists.newArrayList();
+        for (int i = 1; i < 18; i++) {
+            list.add(i);
+        }
+        int shardingTotal = 3;
+        int totalSize = list.size();
+        int shardingSize = totalSize / shardingTotal;
+
+        int sharingIndex = 2;
+        // 业务逻辑
+        for (int i = 0; i < shardingTotal; i++) {
+            log.info("第 {} 片, shardingVO.getIndex()={}", i, sharingIndex);
+            if (shardingTotal - 1 == sharingIndex) {
+                System.out.println("命中分片：" + JSON.toJSONString(list.subList(shardingSize * sharingIndex, totalSize)));
+            } else if (i == sharingIndex) {
+                System.out.println("命中分片："
+                    + JSON.toJSONString(list.subList(shardingSize * sharingIndex, shardingSize * (sharingIndex + 1))));
             }
         }
-
-        System.out.println(count);
     }
 
     @Test
@@ -172,26 +238,66 @@ public class DemoApplicationTests {
 
     @Test
     public void fastJson() {
-        // 算法埋点信息处理
-        ItemDotModelVO extra = new ItemDotModelVO();
-        extra.setAbtestDis("123_456");
-        extra.setAlg_personalized("");
-        ItemDotModelVO newExtra = JSON.parseObject(JSON.toJSONString(extra), ItemDotModelVO.class);
-    }
+        String s = "[{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":96},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":97},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":98},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":98},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":98},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":98},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":98},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":98},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":98},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":98},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":98},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":99},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":99},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":99},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":99},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":99},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":99},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":99},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":100},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":100},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":100},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":100},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":100},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":100},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":100},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":100},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":100},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":100},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":100},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":100},{\"firstSaleCategoryId\":6,\"secondSaleCategoryId\":100},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":176},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":176},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":177},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":177},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":178},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":178},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":179},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":179},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":179},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":180},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":180},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":181},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":181},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":183},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":183},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":183},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":183},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":183},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":183},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":184},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":184},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":185},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":185},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":186},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":186},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":187},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":187},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":188},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":188},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":310},{\"firstSaleCategoryId\":12,\"secondSaleCategoryId\":310},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":235},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":235},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":235},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":235},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":235},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":235},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":235},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":235},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":236},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":236},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":236},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":236},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":236},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":237},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":237},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":237},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":237},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":237},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":237},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":238},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":238},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":238},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":238},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":238},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":238},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":238},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":238},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":238},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":239},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":239},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":239},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":239},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":239},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":239},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":239},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":239},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":240},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":241},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":241},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":241},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":241},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":241},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":242},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":242},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":242},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":242},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":242},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":243},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":243},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":243},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":243},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":243},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":244},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":244},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":244},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":244},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":244},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":244},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":244},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":244},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":244},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":244},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":244},{\"firstSaleCategoryId\":16,\"secondSaleCategoryId\":244}]";
+        List<CategoryVO> categoryVOList = JSON.parseArray(s, CategoryVO.class);
+        Set<String> categoryStrSet = Sets.newHashSet();
+        if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(categoryVOList)) {
+            for (CategoryVO categoryVO: categoryVOList) {
+                categoryStrSet.add(categoryVO.getFirstSaleCategoryId() + "-" + categoryVO.getSecondSaleCategoryId());
+            }
+        }
 
+        System.out.println(categoryStrSet);
+    }
 
     @Test
     public void dateFormat() {
-
-        System.out.println(DateUtils.parseStringToAnotherFormat("2021-10-07 00:00:00", DateUtils.DATE_TIME_FORMAT, DateUtils.DATEFORMAT_SINGLE_DIGIT_MONTH_DAY));
+        System.out.printf(DateUtils.parseLongToString(1672894800000L, "M.d HH:mm") + "开抢");
     }
 
     @Test
     public void instance() {
-        List<Integer> list = null;
-        for (Integer integer : list) {
-            System.out.println(integer);
+        List<String> list = Lists.newArrayList("dft", "SPU", "ALL_SPU_ID", "SPU_ID_TO_SKU_IDS", "ALL_SKU_ID", "SKU",
+            "SKU_MARK_UP_RADIO", "ITEM_POOL_SHOP_SKU", "CUSTOMER_SKU", "SPU_SHOP", "SHOP_ITEMS_LIST",
+            "INVENTORY_LEFT_AMOUNT", "SPU_SALE_CATEGORY", "SPU_AREA", "SHOP_ITEM_COUNT");
+        Collections.sort(list);
+        System.out.println(JSON.toJSONString(list));
+    }
+
+    private boolean checkAllPackageDelivered(OMSOrderOutBean omsOrderBean) {
+        if (omsOrderBean == null || CollectionUtils.isEmpty(omsOrderBean.getOrderPackages())) {
+            return false;
         }
+        for (OMSOrderPackageBean omsOrderPackage: omsOrderBean.getOrderPackages()) {
+            if (omsOrderPackage == null || CollectionUtils.isEmpty(omsOrderPackage.getExpressDetailInfos())) {
+                return false;
+            }
+            for (OMSOrderExpressDetailInfoBean expressDetailInfoBean: omsOrderPackage.getExpressDetailInfos()) {
+                if (expressDetailInfoBean == null) {
+                    continue;
+                }
+                if (MapUtils.isEmpty(expressDetailInfoBean.getExpressNoDeliveredMap())) {
+                    return false;
+                }
+                Boolean expressNoDelivered = expressDetailInfoBean.getExpressNoDeliveredMap()
+                    .get(expressDetailInfoBean.getExpressNo());
+                if (!Boolean.TRUE.equals(expressNoDelivered)) {
+                    return false;
+                }
+                if (org.apache.commons.collections4.CollectionUtils
+                    .isNotEmpty(expressDetailInfoBean.getSubExpressNos())) {
+                    // 校验子物流单号是否妥投
+                    for (String subExpressNo: expressDetailInfoBean.getSubExpressNos()) {
+                        Boolean subExpressNoDelivered = expressDetailInfoBean.getExpressNoDeliveredMap()
+                            .get(subExpressNo);
+                        if (!Boolean.TRUE.equals(subExpressNoDelivered)) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     @Test
@@ -222,11 +328,10 @@ public class DemoApplicationTests {
         List<Long> longList = Lists.newArrayList(3L, 1L, 2L);
         List<Long> sortedList = longList.stream().sorted(Comparator.comparing(i -> i)).collect(Collectors.toList());
 
-//        List<Long> longSecondList = Lists.newArrayList();
-//        longList.retainAll(longSecondList);
+        //        List<Long> longSecondList = Lists.newArrayList();
+        //        longList.retainAll(longSecondList);
         System.out.println(JSON.toJSONString(longList));
         System.out.println(JSON.toJSONString(sortedList));
-
 
     }
 
@@ -235,7 +340,7 @@ public class DemoApplicationTests {
         String path = "/Users/yinan/Documents/misc/git-cheatsheet.pdf";
 
         String zipName = "git/cheatsheet质量标准";
-//        zipName.replace("/", "-");
+        //        zipName.replace("/", "-");
         String zipPath = "/Users/yinan/Documents/" + zipName + ZIP_SUFFIX;
         File zipFile = null;
         List<File> fileList = com.google.common.collect.Lists.newArrayList();
@@ -273,7 +378,7 @@ public class DemoApplicationTests {
             return;
         }
         StringBuilder sb = new StringBuilder();
-        for (Integer i : list) {
+        for (Integer i: list) {
             sb.append(",").append(i);
         }
         String str = "";
@@ -293,7 +398,6 @@ public class DemoApplicationTests {
 
     }
 
-
     @Test
     public void testListRemove() {
         List<Long> passedItemIdList = Lists.newArrayList();
@@ -303,7 +407,7 @@ public class DemoApplicationTests {
         itemIdList.add(456L);
         itemIdList.add(678L);
 
-        for (Long itemId : passedItemIdList) {
+        for (Long itemId: passedItemIdList) {
             itemIdList.remove(itemId);
             itemIdList.add(0, itemId);
         }
@@ -313,17 +417,36 @@ public class DemoApplicationTests {
 
     @Test
     public void testUrlAppend() {
-        Map<String, String> map = Maps.newHashMap();
-        map.put("userBusId", UUID.randomUUID().toString().replace("-", ""));
+        Map<String, String> params = new HashMap<>();
+        params.put("uid", "40005");
+        params.put("name", "张三");
+        params.put("mobile", "13800138000");
+        params.put("channelId", "6904888");
+        params.put("channelName", "电信后付费");
+        params.put("orders", "123,456");
+        params.put("skuIds", "30001,30002");
 
-        String url = "https://m.you.163.com/item/newUserRank";
-        System.out.println(UrlUtils.appendParamsToUrl(url, map));
+        String url = "https://mall.ka-fuli.com/web#/kf/open";
+        System.out.println(UrlUtils.appendParamsToUrl(url, params));
     }
 
     @Test
     public void testGetParamFromUrl() {
-        String url = "https://m.you.163.com/item/newUserRank";
-        System.out.println(UrlUtils.getUrlParam(url, "categoryId"));
+        System.out.println(toDateMilliSecond("20250709"));
+    }
+
+    public static Long toDateMilliSecond(String dateString) {
+        if (StringUtils.isBlank(dateString)) {
+            return null;
+        }
+        try {
+            SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
+            Date date = df.parse(dateString);
+            return date.getTime();
+        } catch (ParseException e) {
+            log.error("[时间类型转换异常]", e);
+        }
+        return null;
     }
 
     @Test
@@ -340,12 +463,12 @@ public class DemoApplicationTests {
     @Test
     public void testSubList() {
         List<Long> itemIdList = Lists.newArrayList();
-//
-//        itemIdList.add(470036006L);
-//        itemIdList.add(470034004L);
-//        itemIdList.add(469221059L);
-//        itemIdList.add(470017018L);
-//        itemIdList.add(469221062L);
+        //
+        //        itemIdList.add(470036006L);
+        //        itemIdList.add(470034004L);
+        //        itemIdList.add(469221059L);
+        //        itemIdList.add(470017018L);
+        //        itemIdList.add(469221062L);
 
         itemIdList = itemIdList.subList(0, Math.min(itemIdList.size(), 3));
 
@@ -361,7 +484,7 @@ public class DemoApplicationTests {
 
         System.out.println(JSON.toJSONString(itemIdList.subList(0, Math.min(itemIdList.size(), 2))));
 
-//        System.out.println(StringUtils.join(itemIdList, ","));
+        //        System.out.println(StringUtils.join(itemIdList, ","));
     }
 
     @Test
@@ -378,7 +501,8 @@ public class DemoApplicationTests {
 
     @Test
     public void buildSchemeUrl() {
-        String schemeUrl = SchemeUrlBuilder.buildWebViewJump("https://act.you.163.com/act/pub/fBNvOlTsvG9b.html", null, null);
+        String schemeUrl = SchemeUrlBuilder.buildWebViewJump("https://act.you.163.com/act/pub/fBNvOlTsvG9b.html", null,
+            null);
         System.out.println(schemeUrl);
     }
 
@@ -386,7 +510,7 @@ public class DemoApplicationTests {
     public void testIntegerCompareInt() {
         Integer i = new Integer("1");
 
-//        System.out.println(i == 1);
+        //        System.out.println(i == 1);
 
         System.out.println(Boolean.TRUE.equals(null));
 
@@ -394,16 +518,16 @@ public class DemoApplicationTests {
 
     @Test
     public void testBitSet() {
-        int[] array = new int[]{1, 2, 3, 22, 0, 3, 63};
+        int[] array = new int[] { 1, 2, 3, 22, 0, 3, 63 };
         BitSet bitSet = new BitSet(1);
-        System.out.println(bitSet.size());   //64
+        System.out.println(bitSet.size()); //64
         bitSet = new BitSet(65);
-        System.out.println(bitSet.size());   //128
+        System.out.println(bitSet.size()); //128
         bitSet = new BitSet(23);
-        System.out.println(bitSet.size());   //64
+        System.out.println(bitSet.size()); //64
 
         //将数组内容组bitmap
-        for (int value : array) {
+        for (int value: array) {
             bitSet.set(value, true);
         }
 
@@ -481,9 +605,8 @@ public class DemoApplicationTests {
 
     @Test
     public void testBigDecimalDivide() {
-        double numOfTenThousands = new BigDecimal(12500)
-                .divide(new BigDecimal("10000"), 1, RoundingMode.HALF_UP)
-                .doubleValue();
+        double numOfTenThousands = new BigDecimal(12500).divide(new BigDecimal("10000"), 1, RoundingMode.HALF_UP)
+            .doubleValue();
 
         System.out.println(numOfTenThousands);
 
@@ -498,29 +621,28 @@ public class DemoApplicationTests {
 
     @Test
     public void testBigDecimalMoreThan4DigitAnd1Dot() {
-//        BigDecimal bd = new BigDecimal("0");
-//        System.out.println(checkBigDecimalHasLessThanFourDigitsAndOneDot(bd));
-//
-//        BigDecimal bd2 = new BigDecimal("99.89");
-//        System.out.println(checkBigDecimalHasLessThanFourDigitsAndOneDot(bd2));
-//
-//        BigDecimal bd3 = new BigDecimal("19999.9");
-//        System.out.println(checkBigDecimalHasLessThanFourDigitsAndOneDot(bd3));
+        //        BigDecimal bd = new BigDecimal("0");
+        //        System.out.println(checkBigDecimalHasLessThanFourDigitsAndOneDot(bd));
+        //
+        //        BigDecimal bd2 = new BigDecimal("99.89");
+        //        System.out.println(checkBigDecimalHasLessThanFourDigitsAndOneDot(bd2));
+        //
+        //        BigDecimal bd3 = new BigDecimal("19999.9");
+        //        System.out.println(checkBigDecimalHasLessThanFourDigitsAndOneDot(bd3));
 
         BigDecimal retailPrice = new BigDecimal("2222.00");
         BigDecimal actualPrice = new BigDecimal("643");
-        BigDecimal discountPrice = retailPrice
-                .subtract(actualPrice);
+        BigDecimal discountPrice = retailPrice.subtract(actualPrice);
 
         System.out.println(discountPrice.toString());
         System.out.println(checkBigDecimalHasLessThanFourDigitsAndOneDot(discountPrice));
 
-        System.out.println(retailPrice.subtract(actualPrice).setScale(1, RoundingMode.DOWN).stripTrailingZeros().toPlainString());
+        System.out.println(
+            retailPrice.subtract(actualPrice).setScale(1, RoundingMode.DOWN).stripTrailingZeros().toPlainString());
 
-
-//        BigDecimal discount = new BigDecimal(180)
-//                .divide(new BigDecimal(62.5), 2, RoundingMode.UP);
-//        System.out.println(discount);
+        //        BigDecimal discount = new BigDecimal(180)
+        //                .divide(new BigDecimal(62.5), 2, RoundingMode.UP);
+        //        System.out.println(discount);
     }
 
     @Test
@@ -530,17 +652,18 @@ public class DemoApplicationTests {
 
     @Test
     public void testFastJsonBlankString() {
-        String s = "";
-        Item item = JSON.parseObject(s, Item.class);
-        System.out.println(item == null);
-        System.out.println(JSON.toJSONString(item));
+
+        String todayDate = DateUtils.parseLongToString(System.currentTimeMillis(), "yyyy-MM-dd");
+        System.out.println(todayDate);
+        String lastDayDate = DateUtils.parseLongToString(System.currentTimeMillis() - DateUtils.TIME_OF_DAY,
+            "yyyy-MM-dd");
+        System.out.printf(lastDayDate);
     }
 
     @Test
     public void testOperationAttribute() {
         boolean isRedPacketAllowed = false;
-        isRedPacketAllowed = !SkuOperationAtrributeUtil
-                .getConflictRedPacket(0L);
+        isRedPacketAllowed = !SkuOperationAtrributeUtil.getConflictRedPacket(0L);
 
         if (!isRedPacketAllowed) {
             System.out.println("not allowed red packet");
@@ -572,7 +695,6 @@ public class DemoApplicationTests {
         System.out.println(DigestUtils.md5("5b3e4f51e0e69d69fbc0da59e1b631c9"));
     }
 
-
     private final static Comparator<FlashSaleScreenVO> flashScreensComparator = new Comparator<FlashSaleScreenVO>() {
         @Override
         public int compare(FlashSaleScreenVO o1, FlashSaleScreenVO o2) {
@@ -587,10 +709,13 @@ public class DemoApplicationTests {
 
     @Test
     public void testRandom() {
-        Random random = new Random();
-        for (int i = 0; i <= 10; i++) {
-            System.out.println(random.nextDouble());
-        }
+
+        List<String> allItemIdList = Lists.newArrayList("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
+        List<String> topItemIdList = Lists.newArrayList("5", "4");
+        List<String> sortedItemIdList = allItemIdList.stream().sorted(Comparator.comparingInt(topItemIdList::indexOf))
+            .collect(Collectors.toList());
+
+        System.out.println(JSON.toJSONString(sortedItemIdList));
     }
 
     @Test
@@ -604,16 +729,15 @@ public class DemoApplicationTests {
         FullRefundPolicyBean fullRefundPolicyBean = new FullRefundPolicyBean();
         int i = 7;
         fullRefundPolicyBean.setTitles(Lists.newArrayList("商品下单", "付款后%s天", "红包到账（系统发放）"));
-        for (String title : fullRefundPolicyBean.getTitles()) {
+        for (String title: fullRefundPolicyBean.getTitles()) {
             title = String.format(title, i);
         }
         fullRefundPolicyBean.setDetailTitle("全额返活动规则");
-        fullRefundPolicyBean.setContent(Lists.newArrayList("全额返仅限指定用户参加",
-                "用户购买指定商品完成支付后，商品支付金额将以2张红包形式返还（成功付款3天后到账），红包直接当现金使用，您可以用红包在商城购买其他商品",
+        fullRefundPolicyBean.setContent(
+            Lists.newArrayList("全额返仅限指定用户参加", "用户购买指定商品完成支付后，商品支付金额将以2张红包形式返还（成功付款3天后到账），红包直接当现金使用，您可以用红包在商城购买其他商品",
                 "红包满足使用门槛、除商品详情页标识不可使用红包商品外均可使用。红包不可提现，红包有效期为14天，请尽早在有效期内使用，具体红包您可以在【个人】-【我的资产】-【红包】查看；",
                 "首单全额返活动商品在支付时不支持使用立减金/红包/优惠券 /积分/回馈金/礼品卡等所有优惠；",
-                "若用户在收到返还的红包后取消交易或申请退款等，已返还的红包将自动失效，已使用的全额返红包将在退款中扣除。",
-                "在法律允许的范围内，网易严选拥有对该活动的最终解释权。"));
+                "若用户在收到返还的红包后取消交易或申请退款等，已返还的红包将自动失效，已使用的全额返红包将在退款中扣除。", "在法律允许的范围内，网易严选拥有对该活动的最终解释权。"));
 
         System.out.println(JSON.toJSONString(fullRefundPolicyBean));
 
@@ -632,7 +756,6 @@ public class DemoApplicationTests {
         System.out.println(JSON.toJSONString(originProcess));
         System.out.println(JSON.toJSONString(copiedContext));
     }
-
 
     private boolean checkBigDecimalHasLessThanFourDigitsAndOneDot(BigDecimal discountPrice) {
         if (discountPrice == null) {
@@ -666,8 +789,9 @@ public class DemoApplicationTests {
         String s = "472270377";
         String[] array = s.split(",");
         System.out.println(JSON.toJSONString(array));
-        for (String skuId : array) {
-            System.out.println("get YANXUAN_COMMON_SKU_INVENTORY_CACHE\\|SKU_INVENTORY_V1_" + CacheExtKeyUtil.getSkuInventoryModKey(Long.parseLong(skuId)));
+        for (String skuId: array) {
+            System.out.println("get YANXUAN_COMMON_SKU_INVENTORY_CACHE\\|SKU_INVENTORY_V1_"
+                + CacheExtKeyUtil.getSkuInventoryModKey(Long.parseLong(skuId)));
         }
     }
 
@@ -676,8 +800,9 @@ public class DemoApplicationTests {
         String s = "472299805,472299804";
         String[] array = s.split(",");
         System.out.println(JSON.toJSONString(array));
-        for (String skuId : array) {
-            System.out.println("get YANXUAN_COMMON_IC_SKU_CACHE\\|SKU_CACHE_V1_" + CacheExtKeyUtil.getSkuBasisModKey(Long.parseLong(skuId)));
+        for (String skuId: array) {
+            System.out.println("get YANXUAN_COMMON_IC_SKU_CACHE\\|SKU_CACHE_V1_"
+                + CacheExtKeyUtil.getSkuBasisModKey(Long.parseLong(skuId)));
         }
     }
 
@@ -699,7 +824,7 @@ public class DemoApplicationTests {
         Map<Long, Set<String>> itemPlanIdMap = Maps.newHashMap();
         itemPlanIdMap.put(123L, Sets.newHashSet("123String"));
         Set<Long> itemIdSet = Sets.newHashSet(123L, 456L);
-        for (Long itemId : itemIdSet) {
+        for (Long itemId: itemIdSet) {
             Set<String> strings = itemPlanIdMap.get(itemId);
             if (strings == null) {
                 itemPlanIdMap.put(itemId, Sets.newHashSet(itemId + "String"));
@@ -719,7 +844,6 @@ public class DemoApplicationTests {
 
         System.out.println(bigDecimal.toPlainString());
     }
-
 
     @Test
     public void testProcessorsCount() {
@@ -754,8 +878,7 @@ public class DemoApplicationTests {
     @Test
     public void substring() {
         String s = "丁老板";
-        if (org.apache.commons.lang3.StringUtils.isNotBlank(s)
-                && s.length() > 7) {
+        if (org.apache.commons.lang3.StringUtils.isNotBlank(s) && s.length() > 7) {
             System.out.println(s.substring(0, 7) + "\n" + s.substring(7));
         } else {
             System.out.println(s);
@@ -790,18 +913,17 @@ public class DemoApplicationTests {
         item4.setSkuList(Lists.newArrayList());
         item4.setPrice(new BigDecimal("0"));
 
-
         itemList.add(item1);
         itemList.add(item2);
         itemList.add(item3);
         itemList.add(item4);
 
-
         Map<Long, Integer> itemIdSortMap = IntStream.range(0, itemIdList.size()).boxed()
-                .collect(Collectors.toMap(itemIdList::get, Function.identity()));
+            .collect(Collectors.toMap(itemIdList::get, Function.identity()));
         System.out.println(JSON.toJSONString(itemIdSortMap));
         System.out.println(JSON.toJSONString(itemList));
-        itemList.sort(Comparator.comparingInt(vo -> itemIdSortMap.get(vo.getItemId()) != null ? itemIdSortMap.get(vo.getItemId()) : 9999));
+        itemList.sort(Comparator
+            .comparingInt(vo -> itemIdSortMap.get(vo.getItemId()) != null ? itemIdSortMap.get(vo.getItemId()) : 9999));
         System.out.println(JSON.toJSONString(itemList));
     }
 
@@ -818,12 +940,11 @@ public class DemoApplicationTests {
         List<String> ipList = Arrays.asList(strings);
         Collections.sort(ipList);
 
-
         System.out.println(JSON.toJSONString(ipList));
         Set<String> set = Sets.newHashSet(ipList);
         System.out.println(set.size());
 
-        for (String string : ipList) {
+        for (String string: ipList) {
             System.out.println(string);
         }
     }
@@ -835,8 +956,7 @@ public class DemoApplicationTests {
         NewItemListResultVO resultVO = new NewItemListResultVO();
         resultVO.setHasMore(true);
         //非第一页，直接根据透传商品id列表返回商品列表信息
-        List<Long> itemIdList = Arrays.stream(s.split(","))
-                .map(Long::valueOf).collect(Collectors.toList());
+        List<Long> itemIdList = Arrays.stream(s.split(",")).map(Long::valueOf).collect(Collectors.toList());
         List<Long> resultItemIdList = new ArrayList<>(20);
         for (int i = itemIdList.indexOf(lastItemId) + 1; i < itemIdList.size(); i++) {
             if (resultItemIdList.size() >= 2) {
@@ -846,8 +966,7 @@ public class DemoApplicationTests {
         }
         if (CollectionUtils.isEmpty(resultItemIdList)) {
             resultVO.setHasMore(false);
-        } else if (itemIdList.get(itemIdList.size() - 1)
-                .equals(resultItemIdList.get(resultItemIdList.size() - 1))) {
+        } else if (itemIdList.get(itemIdList.size() - 1).equals(resultItemIdList.get(resultItemIdList.size() - 1))) {
             resultVO.setHasMore(false);
         }
 
@@ -883,12 +1002,10 @@ public class DemoApplicationTests {
         Instant instant = Instant.ofEpochMilli(1610531789000L);
         ZoneId zone = ZoneId.systemDefault();
         LocalDateTime selectDate = LocalDateTime.ofInstant(instant, zone);
-        long onSaleStartTime = LocalDateTime
-                .of(selectDate.toLocalDate(), LocalTime.MIN)
-                .toInstant(ZoneOffset.of("+8")).toEpochMilli();
-        long onSaleEndTime = LocalDateTime
-                .of(selectDate.toLocalDate(), LocalTime.MAX)
-                .toInstant(ZoneOffset.of("+8")).toEpochMilli();
+        long onSaleStartTime = LocalDateTime.of(selectDate.toLocalDate(), LocalTime.MIN).toInstant(ZoneOffset.of("+8"))
+            .toEpochMilli();
+        long onSaleEndTime = LocalDateTime.of(selectDate.toLocalDate(), LocalTime.MAX).toInstant(ZoneOffset.of("+8"))
+            .toEpochMilli();
 
         System.out.println(onSaleStartTime);
         System.out.println(onSaleEndTime);
@@ -897,8 +1014,7 @@ public class DemoApplicationTests {
     /**
      * 获取未来X天内自动上架的商品与当天日期0点的映射
      */
-    private Map<Long, List<Long>> getFutureTimeOnSaleItemMap(
-            Map<Long, Long> itemAutoOnSaleTimeMap) {
+    private Map<Long, List<Long>> getFutureTimeOnSaleItemMap(Map<Long, Long> itemAutoOnSaleTimeMap) {
         if (MapUtils.isEmpty(itemAutoOnSaleTimeMap)) {
             return Maps.newHashMap();
         }
@@ -907,25 +1023,19 @@ public class DemoApplicationTests {
         LocalDateTime initialTime = LocalDateTime.now();
         for (int i = 0; i <= 6; i++) {
             initialTime = initialTime.plus(1, ChronoUnit.DAYS);
-            LocalDateTime futureDaysStartTime = LocalDateTime
-                    .of(initialTime.toLocalDate(), LocalTime.MIN);
-            long futureStartTime = futureDaysStartTime
-                    .toInstant(ZoneOffset.of("+8")).toEpochMilli();
-            LocalDateTime futureDayEndTime = LocalDateTime
-                    .of(initialTime.toLocalDate(), LocalTime.MAX);
-            long futureEndTime = futureDayEndTime.toInstant(ZoneOffset.of("+8"))
-                    .toEpochMilli();
+            LocalDateTime futureDaysStartTime = LocalDateTime.of(initialTime.toLocalDate(), LocalTime.MIN);
+            long futureStartTime = futureDaysStartTime.toInstant(ZoneOffset.of("+8")).toEpochMilli();
+            LocalDateTime futureDayEndTime = LocalDateTime.of(initialTime.toLocalDate(), LocalTime.MAX);
+            long futureEndTime = futureDayEndTime.toInstant(ZoneOffset.of("+8")).toEpochMilli();
 
-            for (Map.Entry<Long, Long> itemAutoOnSaleTimeEntry : itemAutoOnSaleTimeMap
-                    .entrySet()) {
+            for (Map.Entry<Long, Long> itemAutoOnSaleTimeEntry: itemAutoOnSaleTimeMap.entrySet()) {
                 if (itemAutoOnSaleTimeEntry.getValue() >= futureStartTime
-                        && itemAutoOnSaleTimeEntry.getValue() <= futureEndTime) {
+                    && itemAutoOnSaleTimeEntry.getValue() <= futureEndTime) {
                     if (futureSaleTimeItemMap.get(futureStartTime) == null) {
-                        futureSaleTimeItemMap.put(futureStartTime, Lists
-                                .newArrayList(itemAutoOnSaleTimeEntry.getKey()));
+                        futureSaleTimeItemMap.put(futureStartTime,
+                            Lists.newArrayList(itemAutoOnSaleTimeEntry.getKey()));
                     } else {
-                        futureSaleTimeItemMap.get(futureStartTime)
-                                .add(itemAutoOnSaleTimeEntry.getKey());
+                        futureSaleTimeItemMap.get(futureStartTime).add(itemAutoOnSaleTimeEntry.getKey());
                     }
                 }
             }
@@ -958,35 +1068,14 @@ public class DemoApplicationTests {
 
     @Test
     public void testLottery() {
-        String config = "[\n" +
-                "  {\n" +
-                "    \"id\":1,\n" +
-                "    \"couponCode\":\"FXYL2020021101\",\n" +
-                "    \"cash\":30,\n" +
-                "    \"validDate\":7,\n" +
-                "    \"state\":2,\n" +
-                "    \"probability\":0.15,\n" +
-                "    \"desc\":\"恭喜！你被满299减30元券砸中啦！7天有效，记得使用哦～\"\n" +
-                "  },\n" +
-                "  {\n" +
-                "    \"id\":2,\n" +
-                "    \"couponCode\":\"FXYL2020021102\",\n" +
-                "    \"cash\":10,\n" +
-                "    \"validDate\":7,\n" +
-                "    \"state\":2,\n" +
-                "    \"probability\":0.30,\n" +
-                "    \"desc\":\"恭喜！你被满189减10元券砸中啦！7天有效，记得使用哦～\"\n" +
-                "  },\n" +
-                "  {\n" +
-                "    \"id\":3,\n" +
-                "    \"couponCode\":\"FXYL2020021103\",\n" +
-                "    \"cash\":5,\n" +
-                "    \"validDate\":7,\n" +
-                "    \"state\":2,\n" +
-                "    \"probability\":0.4499,\n" +
-                "    \"desc\":\"恭喜！你被满99减5元券砸中啦！7天有效，记得使用哦～\"\n" +
-                "  }\n" +
-                "]";
+        String config = "[\n" + "  {\n" + "    \"id\":1,\n" + "    \"couponCode\":\"FXYL2020021101\",\n"
+            + "    \"cash\":30,\n" + "    \"validDate\":7,\n" + "    \"state\":2,\n" + "    \"probability\":0.15,\n"
+            + "    \"desc\":\"恭喜！你被满299减30元券砸中啦！7天有效，记得使用哦～\"\n" + "  },\n" + "  {\n" + "    \"id\":2,\n"
+            + "    \"couponCode\":\"FXYL2020021102\",\n" + "    \"cash\":10,\n" + "    \"validDate\":7,\n"
+            + "    \"state\":2,\n" + "    \"probability\":0.30,\n" + "    \"desc\":\"恭喜！你被满189减10元券砸中啦！7天有效，记得使用哦～\"\n"
+            + "  },\n" + "  {\n" + "    \"id\":3,\n" + "    \"couponCode\":\"FXYL2020021103\",\n" + "    \"cash\":5,\n"
+            + "    \"validDate\":7,\n" + "    \"state\":2,\n" + "    \"probability\":0.4499,\n"
+            + "    \"desc\":\"恭喜！你被满99减5元券砸中啦！7天有效，记得使用哦～\"\n" + "  }\n" + "]";
         List<LotteryGiftBean> lotteryGiftList = JSON.parseArray(config, LotteryGiftBean.class);
 
         System.out.println(JSON.toJSONString(getLotteryGiftVoMap(lotteryGiftList)));
@@ -1038,13 +1127,8 @@ public class DemoApplicationTests {
         System.out.println("list size: " + itemSkuParams.size());
 
         List<Long> itemIdList = itemSkuParams.stream().map(ItemSkuParam::getItemId).collect(Collectors.toList());
-        List<Long> duplicates =
-                itemIdList.stream().collect(Collectors.groupingBy(Function.identity()))
-                        .entrySet()
-                        .stream()
-                        .filter(e -> e.getValue().size() > 1)
-                        .map(Map.Entry::getKey)
-                        .collect(Collectors.toList());
+        List<Long> duplicates = itemIdList.stream().collect(Collectors.groupingBy(Function.identity())).entrySet()
+            .stream().filter(e -> e.getValue().size() > 1).map(Map.Entry::getKey).collect(Collectors.toList());
 
         System.out.println(JSON.toJSONString(duplicates));
 
@@ -1054,7 +1138,7 @@ public class DemoApplicationTests {
     public void testCalBigDecimal() {
         BigDecimal subsidySavePriceThreshold = new BigDecimal("500");
         BigDecimal savePriceThresholdInYuan = subsidySavePriceThreshold.divide(new BigDecimal("100"), 2,
-                RoundingMode.HALF_UP);
+            RoundingMode.HALF_UP);
         System.out.println(savePriceThresholdInYuan);
         BigDecimal savePrice = new BigDecimal("6");
         if (savePrice.compareTo(savePriceThresholdInYuan) < 0) {
@@ -1068,8 +1152,7 @@ public class DemoApplicationTests {
         if (org.apache.commons.collections4.CollectionUtils.isEmpty(lotteryGiftList)) {
             return Maps.newHashMap();
         }
-        return lotteryGiftList.stream()
-                .collect(Collectors.toMap(LotteryGiftBean::getId, i -> i));
+        return lotteryGiftList.stream().collect(Collectors.toMap(LotteryGiftBean::getId, i -> i));
     }
 
     /**
@@ -1079,7 +1162,7 @@ public class DemoApplicationTests {
         Map<Long, Double> lotteryProbabilityMap = new HashMap<>();
         double offset = 0;
 
-        for (LotteryGiftBean lotteryGiftVO : lotteryGiftList) {
+        for (LotteryGiftBean lotteryGiftVO: lotteryGiftList) {
             offset += lotteryGiftVO.getProbability();
             if (offset <= 1) {
                 lotteryProbabilityMap.put(lotteryGiftVO.getId(), offset);
@@ -1091,7 +1174,6 @@ public class DemoApplicationTests {
         return lotteryProbabilityMap;
     }
 
-
     /**
      * 获取获奖总概率
      */
@@ -1099,8 +1181,7 @@ public class DemoApplicationTests {
         if (org.apache.commons.collections4.CollectionUtils.isEmpty(lotteryGiftList)) {
             return 0;
         }
-        return lotteryGiftList.stream()
-                .mapToDouble(LotteryGiftBean::getProbability).sum();
+        return lotteryGiftList.stream().mapToDouble(LotteryGiftBean::getProbability).sum();
     }
 
     private boolean checkTopItemRank(List<GoodsBasic> goodsRankList) {
@@ -1116,8 +1197,7 @@ public class DemoApplicationTests {
         }
 
         List<GoodsBasic> topItemList = goodsRankList.stream()
-                .filter(goodsBasic -> goodsBasic != null && goodsBasic.isStickAtTop())
-                .collect(Collectors.toList());
+            .filter(goodsBasic -> goodsBasic != null && goodsBasic.isStickAtTop()).collect(Collectors.toList());
 
         if (topItemList.size() > 0 && lastStickAtTopItemIndex + 1 > topItemList.size()) {
             return false;
@@ -1146,8 +1226,7 @@ public class DemoApplicationTests {
         addBuyStepVO2.setSatisfy(true);
         addBuyStepVO2.setConfigCount(5);
 
-
-        for (AddBuyStepVO addBuyStepVO : Lists.newArrayList(addBuyStepVO1, addBuyStepVO2)) {
+        for (AddBuyStepVO addBuyStepVO: Lists.newArrayList(addBuyStepVO1, addBuyStepVO2)) {
             if (!addBuyStepVO.isSatisfy() && stepNo <= addBuyStepVO.getStepNo()) {
                 configAllowCount = addBuyStepVO.getConfigCount();
                 break;
@@ -1175,31 +1254,68 @@ public class DemoApplicationTests {
         int index = 0;
         if (itemId != null) {
             for (int i = 0; i < itemIdList.size(); i++) {
-                if (itemIdList.get(i).longValue() == itemId
-                        .longValue()) {
+                if (itemIdList.get(i).longValue() == itemId.longValue()) {
                     index = i + 1;
                     break;
                 }
             }
-        } else if (itemId == null
-                || itemId == 0) {
+        } else if (itemId == null || itemId == 0) {
             index = 0;
         }
 
         List<Long> subList = Lists.newArrayList();
 
-        for (int j = 0; index < itemIdList.size()
-                && j < pageSize; index++, j++) {
+        for (int j = 0; index < itemIdList.size() && j < pageSize; index++, j++) {
             subList.add(itemIdList.get(index));
         }
         System.out.println(JSON.toJSONString(subList));
 
     }
 
+    private boolean validCharacter(char c) {
+        if (c >= 0x4e00 && c <= 0x9fa5) {
+            return true;
+        }
+        if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+            return true;
+        }
+        if (c >= '0' && c <= '9') {
+            return true;
+        }
+        if (c == '-') {
+            return true;
+        }
+        if (c == ' ') {
+            return true;
+        }
+        return false;
+    }
+
     @Test
     public void testGetNextList() {
-        Optional<StatEvent> optional = Optional.ofNullable(null);
-        System.out.println(optional.get());
+        System.out.println(extractUndeliverableProductIds(
+            "方法:tob.mall.callback.order.prebind的依赖服务错误,相关信息如下:收货地址不可配送:300871782、300871783"));
+    }
+
+    public List<String> extractUndeliverableProductIds(String errorMessage) {
+        String keyword = "收货地址不可配送" + ":";
+        int keywordIndex = errorMessage.indexOf(keyword);
+
+        if (keywordIndex == -1) {
+            return Collections.emptyList();
+        }
+
+        // 截取关键词后的内容并去除首尾空格
+        String idsSection = errorMessage.substring(keywordIndex + keyword.length()).trim();
+
+        // 处理空内容的情况
+        if (idsSection.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 分割并处理可能的空格
+        return Arrays.stream(idsSection.split("、")).map(String::trim).filter(id -> !id.isEmpty())
+            .collect(Collectors.toList());
     }
 
     @Test
@@ -1225,7 +1341,7 @@ public class DemoApplicationTests {
 
         Set<Integer> monthOldSet = monthOldCaloriePerKiloMap.keySet();
         Integer matchedMonthKey = null;
-        for (Integer targetMonthOld : monthOldSet) {
+        for (Integer targetMonthOld: monthOldSet) {
             if (targetMonthOld > monthOld) {
                 break;
             }
@@ -1240,20 +1356,25 @@ public class DemoApplicationTests {
         }
 
         if (calorieList.size() == 1) {
-            BigDecimal milkYield = new BigDecimal(String.valueOf(weightInKilo)).setScale(2, RoundingMode.HALF_UP).multiply(new BigDecimal(String.valueOf(calorieList.get(0))))
-                    .divide(new BigDecimal("0.67"), RoundingMode.HALF_UP).divide(new BigDecimal(String.valueOf(mealCountInOneDay)), RoundingMode.HALF_UP);
-            System.out.println("宝宝年龄：" + monthOld + "个月，" + "体重：" +
-                    weightInKilo + "kg。" + "如果一天" + mealCountInOneDay + "餐，每餐需要喝" + milkYield.toPlainString() + "ml母乳");
+            BigDecimal milkYield = new BigDecimal(String.valueOf(weightInKilo)).setScale(2, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal(String.valueOf(calorieList.get(0))))
+                .divide(new BigDecimal("0.67"), RoundingMode.HALF_UP)
+                .divide(new BigDecimal(String.valueOf(mealCountInOneDay)), RoundingMode.HALF_UP);
+            System.out.println("宝宝年龄：" + monthOld + "个月，" + "体重：" + weightInKilo + "kg。" + "如果一天" + mealCountInOneDay
+                + "餐，每餐需要喝" + milkYield.toPlainString() + "ml母乳");
         }
 
         if (calorieList.size() == 2) {
-            BigDecimal minMilkYield = new BigDecimal(String.valueOf(weightInKilo)).setScale(2, RoundingMode.HALF_UP).multiply(new BigDecimal(String.valueOf(calorieList.get(0))))
-                    .divide(new BigDecimal("0.67"), RoundingMode.HALF_UP).divide(new BigDecimal(String.valueOf(mealCountInOneDay)), RoundingMode.HALF_UP);
-            BigDecimal maxMilkYield = new BigDecimal(String.valueOf(weightInKilo)).setScale(2, RoundingMode.HALF_UP).multiply(new BigDecimal(String.valueOf(calorieList.get(1))))
-                    .divide(new BigDecimal("0.67"), RoundingMode.HALF_UP).divide(new BigDecimal(String.valueOf(mealCountInOneDay)), RoundingMode.HALF_UP);
-            ;
-            System.out.println("宝宝年龄：" + monthOld + "个月，" + "体重：" +
-                    weightInKilo + "kg。" + "如果一天" + mealCountInOneDay + "餐，每餐需要喝" + minMilkYield.toPlainString() + "ml-" + maxMilkYield.toPlainString() + "ml母乳");
+            BigDecimal minMilkYield = new BigDecimal(String.valueOf(weightInKilo)).setScale(2, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal(String.valueOf(calorieList.get(0))))
+                .divide(new BigDecimal("0.67"), RoundingMode.HALF_UP)
+                .divide(new BigDecimal(String.valueOf(mealCountInOneDay)), RoundingMode.HALF_UP);
+            BigDecimal maxMilkYield = new BigDecimal(String.valueOf(weightInKilo)).setScale(2, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal(String.valueOf(calorieList.get(1))))
+                .divide(new BigDecimal("0.67"), RoundingMode.HALF_UP)
+                .divide(new BigDecimal(String.valueOf(mealCountInOneDay)), RoundingMode.HALF_UP);;
+            System.out.println("宝宝年龄：" + monthOld + "个月，" + "体重：" + weightInKilo + "kg。" + "如果一天" + mealCountInOneDay
+                + "餐，每餐需要喝" + minMilkYield.toPlainString() + "ml-" + maxMilkYield.toPlainString() + "ml母乳");
         }
 
     }
@@ -1262,12 +1383,10 @@ public class DemoApplicationTests {
     public void testDaysBetween() {
         long currentTime = System.currentTimeMillis();
         LocalDateTime pastLowestPriceTime = LocalDateTime
-                .ofInstant(Instant.ofEpochMilli(currentTime), ZoneId.systemDefault())
-                .truncatedTo(ChronoUnit.DAYS);
+            .ofInstant(Instant.ofEpochMilli(currentTime), ZoneId.systemDefault()).truncatedTo(ChronoUnit.DAYS);
 
-        LocalDateTime now = LocalDateTime
-                .ofInstant(Instant.ofEpochMilli(currentTime), ZoneId.systemDefault())
-                .truncatedTo(ChronoUnit.DAYS);
+        LocalDateTime now = LocalDateTime.ofInstant(Instant.ofEpochMilli(currentTime), ZoneId.systemDefault())
+            .truncatedTo(ChronoUnit.DAYS);
 
         Duration duration = Duration.between(pastLowestPriceTime, now);
         long dayDifference = duration.toDays();
@@ -1285,19 +1404,118 @@ public class DemoApplicationTests {
 
     @Test
     public void testSimpleFormat() throws ParseException {
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-        Calendar cal = Calendar.getInstance();
-        long now = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").parse(simpleDateFormat.format(cal.getTime())).getTime();
-        cal.add(Calendar.MINUTE, 1);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        long nextMinute = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").parse(simpleDateFormat.format(cal.getTime())).getTime();
-        System.out.println((nextMinute - now) / 1000L);
+
+        String appSecret = "ef068514-5ad5-4041-801d-05ac930071f4";
+        Map<String, String> treeMap = new TreeMap<>();
+        treeMap.put("appKey", "c8d5b76e-59c9-4a7c-bccc-735642c23dcd");
+        treeMap.put("method", "yicai.channel.order.pre.create");
+        treeMap.put("timestamp", "2024-10-21 10:59:36");
+        treeMap.put("orderInfo",
+            "{\"expFee\":0,\"expFeeCompanyPay\":0,\"expFeeThirdPay\":0,\"orderId\":\"(FLSC)POSD20241021105915640\",\"orderItems\":[{\"count\":1,\"name\":\"秋冬女士100%羊毛衫套头内搭毛衣针织打底衫\",\"originPrice\":284.76,\"skuId\":\"301066713\",\"subtotalPrice\":284.76}],\"realPrice\":284.76,\"receiverAddressDetail\":\"城区洪家楼街道黄台南路五号康和东苑4-2-1904\",\"receiverCityName\":\"济南市\",\"receiverDistrictName\":\"历城区\",\"receiverMobile\":\"15615315338\",\"receiverName\":\"岳彤\",\"receiverProvinceName\":\"山东\",\"receiverStreetName\":\"城区\",\"submitTime\":1729479576000,\"zipCode\":\"250100\"}");
+        //遍历treeMap，将其value取出添加进拼接字符串
+        StringBuilder sb = new StringBuilder();
+
+        Iterator<String> it = treeMap.keySet().iterator();
+
+        String key;
+        while (it.hasNext()) {
+            key = it.next();
+            sb.append(key).append("=").append(treeMap.get(key));
+        }
+
+        //等待验签的字符串收尾添加appSecret，准备加密验签
+        String paramsStr = appSecret + sb + appSecret;
+
+        //获取加密后的字符串
+        String paramsSignStr = ParseMD5.parseStrToMd5U32(paramsStr);
+
+        System.out.println(paramsSignStr);
+
+    }
+
+    //从给定数组中选择k个最大的数，保持原有顺序
+    private List<Integer> prepare(int[] nums, int k) {
+        //使用了单调栈，每个元素最多入栈一次，出栈一次
+        Stack<Integer> stack = new Stack<>();
+        //需要丢弃的元素数量
+        int drop = nums.length - k;
+        for (int num: nums) {
+            while (drop > 0 && !stack.isEmpty() && num > stack.peek()) {
+                stack.pop();
+                drop--;
+            }
+            stack.push(num);
+        }
+        //返回栈中的前k个元素
+        return stack.subList(0, k);
+    }
+
+    private int[] maxSubsequence(int[] nums, int k) {
+        int length = nums.length;
+        int[] stack = new int[k]; // 结果数组，存储选取的k个数
+        int top = -1; // 栈顶指针，指向结果数组的最后一个元素
+        int remain = length - k; // 剩余的元素数量，等于原数组的长度减去k
+        for (int i = 0; i < length; i++) { // i是当前遍历到的nums中的元素的下标
+            int num = nums[i]; // 当前元素
+            // 如果栈不为空，且栈顶元素小于当前元素，且剩余的元素数量大于0，就将栈顶元素删除，即将top减1，remain减1
+            while (top >= 0 && stack[top] < num && remain > 0) {
+                top--;
+                remain--;
+            }
+            // 如果栈的元素数量小于k，就将当前元素添加到栈中，即将num赋值给stack[++top]
+            if (top < k - 1) {
+                stack[++top] = num;
+            } else {
+                remain--; // 如果栈的元素数量等于k，就将remain减1
+            }
+        }
+        return stack; // 返回结果数组
     }
 
     @Test
     public void testCat() {
-        System.out.println(getMoutaiProxyUserIdByItemId(123L));
+        BigDecimal balanceAllocateRatio = new BigDecimal("102.59").divide(new BigDecimal("102.6"), 4,
+            RoundingMode.DOWN);
+        System.out.println("item1 balanceAllocateRatio: " + balanceAllocateRatio);
+        BigDecimal item1BalancePrice = balanceAllocateRatio.multiply(new BigDecimal("49.90")).setScale(2,
+            RoundingMode.HALF_UP);
+        System.out.println("item1 balance price: " + item1BalancePrice);
+        BigDecimal item1CashPrice = new BigDecimal("49.90").subtract(item1BalancePrice);
+        System.out.println("item1 cash price: " + item1CashPrice);
+
+        BigDecimal item2Balance = balanceAllocateRatio.multiply(new BigDecimal("44.70")).setScale(2,
+            RoundingMode.HALF_UP);
+        System.out.println("item2 balance price: " + item2Balance);
+        BigDecimal item2CashPrice = new BigDecimal("44.70").subtract(item2Balance);
+        System.out.println("item2 cash price: " + item2CashPrice);
+
+        BigDecimal expBalance = new BigDecimal("102.59").subtract(item1BalancePrice).subtract(item2Balance);
+        System.out.println("exp balance: " + expBalance);
+        BigDecimal expCash = new BigDecimal("0.01").subtract(item1CashPrice).subtract(item2CashPrice);
+        System.out.println("exp cash: " + expCash);
+
+        //        if (expCash.compareTo(BigDecimal.ZERO) < 0) {
+        //            // 最后一项为最小金额项，如果发生现金分摊金额为负数的情况，将当前项现金支付比例默认设置为0.01，将差额补偿到最大金额商品项
+        //            BigDecimal deficit = new BigDecimal("0.00").subtract(expCash);
+        //            System.out.println("deficit: " + deficit);
+        //            expCash = new BigDecimal("0.00");
+        //            System.out.println("new exp cash: " + expCash);
+        //            expBalance = new BigDecimal("8.00").subtract(expCash);
+        //            System.out.println("new exp balance: " + expBalance);
+        //            item1CashPrice = item1CashPrice.subtract(deficit);
+        //            System.out.println("new item1 cash price: " + item1CashPrice);
+        //            item1BalancePrice = new BigDecimal("49.90").subtract(item1CashPrice);
+        //            System.out.println("new item1 balance price: " + item1BalancePrice);
+        //
+        //        }
+
+        //
+        //        BigDecimal item2BalancePrice = new BigDecimal("102.59")
+        //                .subtract(item2Balance);
+        //        System.out.println("item2 balance price: " + item2BalancePrice);
+        //        BigDecimal item2CashPrice = new BigDecimal("0.01").subtract(new BigDecimal("0.01"));
+        //        System.out.println("item2 cash price: " + item2CashPrice);
+
     }
 
     @Test
@@ -1322,9 +1540,8 @@ public class DemoApplicationTests {
 
         //获取非数字的内容
         originPromTip = originPromTip.replaceAll(integerOrDecimalRegex, "_");
-        List<String> stringList = Lists
-                .newArrayList(Arrays.asList(originPromTip.split("_")));
-        for (String notNumber : stringList) {
+        List<String> stringList = Lists.newArrayList(Arrays.asList(originPromTip.split("_")));
+        for (String notNumber: stringList) {
             ComplexTextVO complexTextVO = new ComplexTextVO();
             complexTextVO.setValue(notNumber);
             complexTextVO.setType(ComplexTextColorConsts.STAMP_BLACK);
@@ -1334,7 +1551,7 @@ public class DemoApplicationTests {
         //合并数字到结果中
         if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(numberList)) {
             int index = 1;
-            for (String number : numberList) {
+            for (String number: numberList) {
                 ComplexTextVO complexTextVO = new ComplexTextVO();
                 complexTextVO.setValue(number);
                 complexTextVO.setType(ComplexTextColorConsts.STAMP_RED);
@@ -1362,23 +1579,17 @@ public class DemoApplicationTests {
         goodsBasicList.add(goodsBasic3);
 
         Map<Long, Long> issuedSchemePrizeCountMap = goodsBasicList.stream()
-                .collect(Collectors.groupingBy(GoodsBasic::getItemId, Collectors.counting()));
+            .collect(Collectors.groupingBy(GoodsBasic::getItemId, Collectors.counting()));
         System.out.println(JSON.toJSONString(issuedSchemePrizeCountMap));
     }
 
     @Test
     public void testFields() {
         CacheScheduleStatEvent completeScheduleStatEvent = CacheScheduleStatEvent.builder()
-                .time(System.currentTimeMillis())
-                .type(StatEventTypeEnum.CACHE_SCHEDULE_EVENT)
-                .ope(CacheOpeTypeEnum.SCHEDULE)
-                .cacheName("ITEM_CACHE")
-                .triggerStage(TriggerStageEnum.TRIGGER_COMPLETE)
-                .result("SUCCESS")
-                .trigger("ITEM_CACHE" + "." + "DSCHEDULE")
-                .job("REMOTE" + "." + "ITEM_CACHE")
-                .elapsed(200L)
-                .build();
+            .time(System.currentTimeMillis()).type(StatEventTypeEnum.CACHE_SCHEDULE_EVENT)
+            .ope(CacheOpeTypeEnum.SCHEDULE).cacheName("ITEM_CACHE").triggerStage(TriggerStageEnum.TRIGGER_COMPLETE)
+            .result("SUCCESS").trigger("ITEM_CACHE" + "." + "DSCHEDULE").job("REMOTE" + "." + "ITEM_CACHE")
+            .elapsed(200L).build();
 
         System.out.println(genFields(completeScheduleStatEvent));
     }
@@ -1389,8 +1600,7 @@ public class DemoApplicationTests {
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Shanghai"));
 
         // 计算下个月的第一天
-        ZonedDateTime nextMonthFirstDay = now.with(TemporalAdjusters.firstDayOfNextMonth())
-                .with(LocalTime.MIDNIGHT);
+        ZonedDateTime nextMonthFirstDay = now.with(TemporalAdjusters.firstDayOfNextMonth()).with(LocalTime.MIDNIGHT);
 
         // 将给定的时间戳转换为ZonedDateTime
         Instant givenInstant = Instant.ofEpochMilli(1685548800000L);
@@ -1399,7 +1609,6 @@ public class DemoApplicationTests {
         // 判断下个月第一天是否早于给定的时间
         System.out.println(nextMonthFirstDay.isBefore(givenTime));
     }
-
 
     @Test
     public void testAnd() {
@@ -1410,7 +1619,8 @@ public class DemoApplicationTests {
     @Test
     public void testToString() {
         List<Integer> list = Lists.newArrayList(2, 3, 1);
-        System.out.println(JSON.toJSONString(list.stream().sorted(Comparator.comparing(i -> i)).collect(Collectors.toList())));
+        System.out.println(
+            JSON.toJSONString(list.stream().sorted(Comparator.comparing(i -> i)).collect(Collectors.toList())));
         System.out.println(UUID.randomUUID());
     }
 
@@ -1430,13 +1640,13 @@ public class DemoApplicationTests {
         System.out.println("jackson序列化结果: " + jacksonSerialization);
     }
 
-
     @Test
     public void insertGenerate() {
         String s = " INSERT INTO `mt_reservation`.`TB_MOUTAI_RESERVATION_ITEM` (`itemCode`, `itemName`, `shortCode`, `shortName`, `itemKind`, `itemKindName`, `itemType`, `itemTypeName`, `itemSubType`, `itemSubTypeName`, `barcode`, `unitId`, `unitName`, `outprice`, `tSize`, `pSize`, `createTime`, `updateTime`) VALUES (";
         int startItemCode = 750;
         for (int i = 0; i < 43; i++) {
-            System.out.println(s + "'" + (startItemCode + i) + "'," + "'茅台酒" + i + "'," + "'0', '0', '01', 'mt', '50', '低度', 'MTDDJ001', '普通低度', '6902952880195', '10', '瓶', 0.01, 1062, 12, 1639924724000, 1639924724000);");
+            System.out.println(s + "'" + (startItemCode + i) + "'," + "'茅台酒" + i + "',"
+                + "'0', '0', '01', 'mt', '50', '低度', 'MTDDJ001', '普通低度', '6902952880195', '10', '瓶', 0.01, 1062, 12, 1639924724000, 1639924724000);");
         }
     }
 
@@ -1459,7 +1669,8 @@ public class DemoApplicationTests {
 
     @Test
     public void parseDate() {
-        System.out.println(UserInfoUtil.tokenValidate("1649301352915", UserInfoUtil.getOriginalStr("8220c2a8c148d6dad1f625b4cbb6ebfd"), "f5f32b04d0cea756222c4d01134dcb"));
+        System.out.println(UserInfoUtil.tokenValidate("1649301352915",
+            UserInfoUtil.getOriginalStr("8220c2a8c148d6dad1f625b4cbb6ebfd"), "f5f32b04d0cea756222c4d01134dcb"));
     }
 
     @Test
@@ -1472,7 +1683,6 @@ public class DemoApplicationTests {
 
     }
 
-
     private void changeString(String s) {
         s = "123";
     }
@@ -1483,7 +1693,7 @@ public class DemoApplicationTests {
         }
         Method[] methods = scheduleInfo.getClass().getMethods();
         Map<String, Object> map = new HashMap<>();
-        for (Method m : methods) {
+        for (Method m: methods) {
             if (m.getName().startsWith("get")) {
                 Object value = null;
                 try {
@@ -1508,7 +1718,6 @@ public class DemoApplicationTests {
         return map;
     }
 
-
     private List<Long> getNextCoupleItemIds(List<Long> allItemIdList, long currentItemId, int count) {
         if (CollectionUtils.isEmpty(allItemIdList)) {
             return Lists.newArrayList();
@@ -1517,7 +1726,8 @@ public class DemoApplicationTests {
             return Lists.newArrayList();
         }
         List<Long> copyAllItemList = Lists.newArrayList(allItemIdList);
-        List<Long> itemIdsAfterCurrentItemId = copyAllItemList.subList(copyAllItemList.indexOf(currentItemId) + 1, copyAllItemList.size());
+        List<Long> itemIdsAfterCurrentItemId = copyAllItemList.subList(copyAllItemList.indexOf(currentItemId) + 1,
+            copyAllItemList.size());
         return itemIdsAfterCurrentItemId.subList(0, Math.min(itemIdsAfterCurrentItemId.size(), count));
     }
 
@@ -1536,13 +1746,12 @@ public class DemoApplicationTests {
                 return userIdSet;
             }
 
-            for (String userId : proxyMoutaiUserIds) {
+            for (String userId: proxyMoutaiUserIds) {
                 userIdSet.add(Long.valueOf(userId));
             }
             i++;
         }
         return userIdSet;
     }
-
 
 }

@@ -19,7 +19,7 @@ public class MybatisPlusGeneratorRun {
      * 数据源配置
      */
     private static final DataSourceConfig.Builder DATA_SOURCE_CONFIG = new DataSourceConfig.Builder(
-            "jdbc:mysql://localhost:3306/personal", "root", "zyn123zyn");
+        "jdbc:mysql://localhost:3306/personal", "root", "zyn123zyn");
 
     /**
      * 执行 run
@@ -28,19 +28,18 @@ public class MybatisPlusGeneratorRun {
         FastAutoGenerator.create(DATA_SOURCE_CONFIG).globalConfig(builder -> {
             // 设置作者
             builder.author("Yinan Zhang (zhangyinan01@corp.netease.com)")
-                    // 覆盖已生成文件
-                    .fileOverride().outputDir("/Users/yinan/Downloads");
+                // 覆盖已生成文件
+                .fileOverride().outputDir("/Users/yinan/Downloads");
             // 指定输出目录
         }).packageConfig(builder -> {
             // 设置父包名
-            builder.parent("com.tob.mall.tob.cart")
-                    // 设置父包模块名
-                    .moduleName("dal")
-                    // 设置mapperXml生成路径
-                    .pathInfo(Collections.singletonMap(OutputFile.mapperXml, "/Users/yinan/Downloads"));
+            builder.parent("com.netease.yanxuan.tob.galaxy.order.dal")
+                // 设置父包模块名
+                // 设置mapperXml生成路径
+                .pathInfo(Collections.singletonMap(OutputFile.mapperXml, "/Users/yinan/Downloads"));
         }).strategyConfig(builder -> {
             // 设置需要生成的表名
-            builder.addInclude("TB_TOB_MALL_CART_ITEM").entityBuilder().enableTableFieldAnnotation().enableLombok();
+            builder.addInclude("TB_TOB_GALAXY_ACCESS_RESULT_STAT").entityBuilder().enableTableFieldAnnotation().enableLombok();
             // 使用Freemarker引擎模板，默认的是Velocity引擎模板
         }).templateEngine(new FreemarkerTemplateEngine()).execute();
     }

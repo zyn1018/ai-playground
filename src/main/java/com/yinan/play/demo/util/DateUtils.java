@@ -998,4 +998,31 @@ public class DateUtils {
         }
         return days + "天";
     }
+
+
+    public static String long2String(long time, String format) {
+        if (StringUtils.isEmpty(format)) {
+            format = DATE_TIME_FORMAT;
+        }
+        SimpleDateFormat sdf = new SimpleDateFormat(format);
+        return sdf.format(new Date(time));
+    }
+
+    public static long getEndDateTime(String endDate) {
+        if (StringUtils.isBlank(endDate)) {
+            return 0;
+        }
+        long time = parseStringToLong(endDate, DATE_FORMAT);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(time);
+        calendar.add(Calendar.DATE, 1);
+        return calendar.getTimeInMillis();
+    }
+
+    public static long getStartDateTime(String startDate) {
+        if (StringUtils.isBlank(startDate)) {
+            return 0;
+        }
+        return parseStringToLong(startDate, DATE_FORMAT);
+    }
 }

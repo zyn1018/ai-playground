@@ -1,26 +1,37 @@
 package com.yinan.play.demo;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.Arrays;
+import com.yinan.play.demo.meta.GoodsBasic;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class InsertionSortTests {
 
     @Test
-    public void contextLoads() {
+    public void contextLoads() throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+        // 获取Class对象的三种方式
+        System.out.println("根据类名:  \t" + GoodsBasic.class);
+        System.out.println("根据对象:  \t" + new GoodsBasic().getClass());
+        Class goodsClass = Class.forName("com.yinan.play.demo.meta.GoodsBasic");
+        System.out.println("根据全限定类名:\t" + goodsClass);
+        // 常用的方法
+        System.out.println("获取全限定类名:\t" + goodsClass.getName());
+        System.out.println("获取类名:\t" + goodsClass.getSimpleName());
+        System.out.println("实例化:\t" + goodsClass.newInstance());
     }
 
-    @Test
-    public void testBubbleSort() {
-        int[] nums = {1,3,4,2,5,6};
-        System.out.println(Arrays.toString(nums));
-        insertionSort(nums);
-        System.out.println(Arrays.toString(nums));
+    public static void main(String[] args) {
+        String[] nums="70,23,1,45,1000,975,7,89,34,45".split(",");
+        List<Integer> list=Arrays.stream(nums).map(Integer::parseInt).sorted().collect(Collectors.toList());
+        System.out.println(String.valueOf(list.get(list.size() - 2)));
     }
 
     /**
